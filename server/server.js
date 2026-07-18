@@ -36,8 +36,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const server = http.createServer(app);
+// ========== START SERVER ==========
 const PORT = process.env.PORT || 3001;
 
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server ready on port ${PORT}`);
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ============ CONFIG ============
