@@ -33,16 +33,18 @@ class QuadTree {
 QuadTree.RectBounds = RectBounds;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const app = express();
 const server = http.createServer(app);
+
+// ✅ static files قبل server.listen
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
 // ========== START SERVER ==========
 const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server ready on port ${PORT}`);
 });
-app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ============ CONFIG ============
 const MAP_W = 1000;
