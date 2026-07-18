@@ -1,0 +1,23 @@
+{
+  "name": "worm-lite",
+  "version": "1.0.0",
+  "type": "module", 
+  "description": "Lightweight open-source worm game",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "build": "node scripts/build.js"
+  },
+  "keywords": ["multiplayer", "game", "websocket"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
