@@ -6,8 +6,8 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "build": "node scripts/build.js"
+    "dev": "nodemon server/server.js"
+    
   },
   "keywords": ["multiplayer", "game", "websocket"],
   "author": "",
