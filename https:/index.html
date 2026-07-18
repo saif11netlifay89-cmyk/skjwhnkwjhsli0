@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Worm-Lite</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  
+  <!-- السكربتات والمكتبات -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fastclick@1.0.6/lib/fastclick.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.12/pixi.min.js"></script>
+  <script>
+    // Cookie utility functions
+// أعِد تعريفهما في أعلى الـ HTML (قبل أي سكريبت آخر)
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? decodeURIComponent(v[2]) : '';
+}
+function setCookie(name, value, sec = 86400) {
+  const d = new Date(); d.setTime(d.getTime() + sec * 1000);
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + d.toUTCString() + '; path=/';
+}
+    
+    function setCookie(name, value, seconds) {
+      var expires = "";
+      if (seconds) {
+        var date = new Date();
+        date.setTime(date.getTime() + (seconds * 1000));
+        expires = "; expires=" + date.toUTCString();
+      }
+      document.cookie = name + "=" + value + expires + "; path=/";
+    }
+    
+    // تحميل الترجمات بشكل متزامن
+    window.I18N_MESSAGES = {
+      "index": {
+        "game": {
+          "result": {
+            "title": "Game Result"
+          }
+        }
+      }
+    };
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'locales/en.json', false);
+    xhr.onload = function() {
+      try {
+        window.I18N_MESSAGES = JSON.parse(xhr.responseText);
+      } catch (e) {
+        console.warn('Failed to parse i18n messages:', e);
+      }
+    };
+    xhr.onerror = function() {
+      console.warn('Failed to load i18n messages');
+    };
+    xhr.send();
+  </script>
+
+  <!-- DOM Structure expected by game.js -->
+<div id="game-wrap" style="display: block;">
+    <div id="game-cont">
+        <canvas id="background-canvas" width="870" height="778" style="touch-action: none; cursor: inherit;"></canvas>
+
+        <!-- ********************* -->
+
+        <div id="social-buttons">
+            <div class="pad">
+                <div class="fb-like fb_iframe_widget" data-href="https://wormate.io/" data-layout="button_count" data-action="recommend" data-size="small" data-show-faces="true" data-share="true" fb-xfbml-state="parsed" fb-iframe-plugin-query="action=recommend&amp;app_id=861926850619051&amp;container_width=0&amp;href=https%3A%2F%2Fwormate.io%2F&amp;layout=button_count&amp;locale=en_US&amp;sdk=joey&amp;share=true&amp;show_faces=true&amp;size=small"><span style="vertical-align: top; width: 0px; height: 0px; overflow: hidden;"><iframe name="f3ee191c6c6346155" width="1000px" height="1000px" data-testid="fb:like Facebook Social Plugin" title="fb:like Facebook Social Plugin" frameborder="0" allowtransparency="true" allowfullscreen="true" scrolling="no" allow="encrypted-media" src="https://www.facebook.com/v14.0/plugins/like.php?action=recommend&amp;app_id=861926850619051&amp;channel=https%3A%2F%2Fstaticxx.facebook.com%2Fx%2Fconnect%2Fxd_arbiter%2F%3Fversion%3D46%23cb%3Df5c3456fae44f6b44%26domain%3Dwormate.io%26is_canvas%3Dfalse%26origin%3Dhttps%253A%252F%252Fwormate.io%252Ff34521113f1181509%26relation%3Dparent.parent&amp;container_width=0&amp;href=https%3A%2F%2Fwormate.io%2F&amp;layout=button_count&amp;locale=en_US&amp;sdk=joey&amp;share=true&amp;show_faces=true&amp;size=small" style="border: none; visibility: hidden;"></iframe></span></div>
+            </div>
+            <div class="pad">
+                <div class="fb-follow" data-href="https://www.facebook.com/wormate.io" data-layout="button" data-size="small" data-show-faces="true"></div>
+                <div class="fb-like fb_iframe_widget" data-href="https://www.facebook.com/wormate.io" data-layout="button" data-size="small" data-show-faces="true" data-action="like" fb-xfbml-state="parsed" fb-iframe-plugin-query="action=like&amp;app_id=861926850619051&amp;container_width=0&amp;href=https%3A%2F%2Fwww.facebook.com%2Fwormate.io&amp;layout=button&amp;locale=en_US&amp;sdk=joey&amp;show_faces=true&amp;size=small"><span style="vertical-align: top; width: 0px; height: 0px; overflow: hidden;"><iframe name="fe5b6e760c072d066" width="1000px" height="1000px" data-testid="fb:like Facebook Social Plugin" title="fb:like Facebook Social Plugin" frameborder="0" allowtransparency="true" allowfullscreen="true" scrolling="no" allow="encrypted-media" src="https://www.facebook.com/v14.0/plugins/like.php?action=like&amp;app_id=861926850619051&amp;channel=https%3A%2F%2Fstaticxx.facebook.com%2Fx%2Fconnect%2Fxd_arbiter%2F%3Fversion%3D46%23cb%3Dfc5caa5b2f4764dad%26domain%3Dwormate.io%26is_canvas%3Dfalse%26origin%3Dhttps%253A%252F%252Fwormate.io%252Ff34521113f1181509%26relation%3Dparent.parent&amp;container_width=0&amp;href=https%3A%2F%2Fwww.facebook.com%2Fwormate.io&amp;layout=button&amp;locale=en_US&amp;sdk=joey&amp;show_faces=true&amp;size=small" style="border: none; visibility: hidden;"></iframe></span></div>
+            </div>
+            <div class="pad"><div id="___ytsubscribe_0" style="position: absolute; width: 450px; left: -10000px;"><iframe ng-non-bindable="" frameborder="0" hspace="0" marginheight="0" marginwidth="0" scrolling="no" style="position:absolute;top:-10000px;width:450px;margin:0px;border-style:none" tabindex="0" vspace="0" width="100%" id="I0_1767463400313" name="I0_1767463400313" src="https://www.youtube.com/subscribe_embed?usegapi=1&amp;channelid=UCP5lq-4vNBw9vtBmvyQxY5Q&amp;layout=default&amp;count=default&amp;origin=https%3A%2F%2Fwormate.io&amp;gsrc=3p&amp;ic=1&amp;jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.OE6tiwO4KJo.O%2Fd%3D1%2Frs%3DAHpOoo_Itz6IAL6GO-n8kgAepm47TBsg1Q%2Fm%3D__features__#_methods=onPlusOne%2C_ready%2C_close%2C_open%2C_resizeMe%2C_renderstart%2Concircled%2Cdrefresh%2Cerefresh%2Conload&amp;id=I0_1767463400313&amp;_gfid=I0_1767463400313&amp;parent=https%3A%2F%2Fwormate.io&amp;pfname=&amp;rpctoken=28791355" data-gapiattached="true"></iframe></div><div class="g-ytsubscribe" data-channelid="UCP5lq-4vNBw9vtBmvyQxY5Q" data-layout="default" data-count="default" data-gapiscan="true" data-onload="true" data-gapistub="true"></div></div>
+        </div>
+
+        <!-- ********************* -->
+
+        <div id="game-view" class="view">
+            <canvas id="game-canvas" width="0" height="0" style="touch-action: none; cursor: inherit;"></canvas>
+        </div>
+        <div id="results-view" class="view">
+            <div id="congrats-bg">
+                <div id="congrats-wrap">
+                    <div id="congrats">
+                        <div id="final-caption">Congratulations!</div>
+                        <div id="final-message"></div>
+                        <div id="final-score"></div>
+                        <div id="final-place"></div>
+                        <div id="final-board"></div>
+                        <div class="controls">
+                            <div id="final-continue">Continue</div>
+                            <div id="final-share-fb"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="unl6wj4czdl84o9b" style="display: none !important;">
+                <div class="label">Advertisement:</div>
+                <div id="ltmolilci1iurq1i"><div id="wormate-io_970x250"></div></div>
+            </div>
+        </div>
+
+        <div id="stretch-box" style="transform: translate(-50%, -50%) scale(0.90625);">
+            <div id="main-menu-view" class="stretch-view">
+                <div id="mm-line-top" style="display: none;">
+                    <div id="mm-player-info" style="">
+                        <img id="mm-player-avatar" src="/images/guest-avatar-valday2025.png" alt="Wormate Guest Avatar">
+
+                        <div id="mm-player-username" data-guest="Guest">Guest</div>
+
+                        <div class="mm-player-exp">
+                            <div id="mm-player-exp-bar" style="width: 0px;"></div>
+                            <div id="mm-player-exp-val"></div>
+                        </div>
+
+                        <div id="mm-player-level">1</div>
+                    </div><div id="mm-coins-box" style="display: none"><img class="mm-coins-img" src="https://wormate.io/images/coin.png" alt="Wormate Coin"><span id="mm-coins-val">10</span><div id="mm-coins-buy"><span>Buy</span></div>
+                    </div>
+                </div>
+
+                <div id="mm-line-center"><div class="column-left">
+                        
+                            
+                            <div class="description-text">
+    <h1>Wormate.io Adventures Non-Stop</h1>
+    <p>Wormate.io is a smash-hit online game with dynamic storyline and amusing graphics. The game is free to play, start growing your pets today – cute colorful worms. Aiming to become a real anaconda, the little worm never sits on one place – he’s ready to have a bite, though he is in danger of becoming a dinner for more luckier fellow.</p>
+    <p>Try to raise your own snake in the game using a browser or application on the tablet or smartphone. Wormate.io team have done everything to provide stable work of Wormate game on any iOS or Android gadget.</p>
+
+    <h2>Treat the worm with Sweets</h2>
+    <p>The worms are real gourmets. They like to taste cakes, chocolate biscuits, candies and other sweet-stuff.</p>
+    <p>There are so much sweets around the worm that it seems he lives in the candy box. Thus the agile worm grows significantly faster than in other similar games. It means that the top of the leader board is easy to be reached even at the 1st minute of the game.</p>
+
+    <h2>Amazing skins for the Worm</h2>
+    <p>In our browser game even the gamers, playing without being registered, can use skins limitlessly for free. To get the opportunity of changing three-colored skin for pet to cuter and funnier variant, we kindly ask you to share game with your friends. There are more than 30 different outfits for worms.</p>
+
+    <h2>Magic Potions for Power-ups</h2>
+    <p>Do you want to take part in the battle for survival as an equal rival of giant worms? Then get your worm to the bottles with magic liquids. The worm can’t come across toxic food – all the bonuses are pleasant. It’s easy to learn about potion’s properties from the color of the bottle:</p>
+    <ul>
+        <li>the green one makes the pet 50% faster;</li>
+        <li>the blue liquid helps to move nimbly;</li>
+        <li>the red-blue potion allows to attract sweets at the distance;</li>
+        <li>the orange bottle contains growth hormone: the light one allow the pet to grow twice faster (x2), the orange potion – up to 5 times quicker, the dark liquid – up to 10 times.</li>
+    </ul>
+    <p>Remember: the expiration term is limited (from 10 to 40 seconds), that’s why use the obtained bonuses without hesitation, and the worm will certainly get to the top place of the leader board.</p>
+
+    <h2>Compete with Friends</h2>
+    <p>Do you spend great time playing? Have you managed to get the record score? Share your results with your buddies at social networks. After finishing the game you can click «Share» button for Facebook, or just go on playing the game for free.</p>
+    <p>Cute worms won’t let you get bored, they’ll raise the mood in a journey, during the break at work or the long evening. At Wormate.io you’ll enjoy colorful design, plenties of sweets and a serious struggle for the first place with the best gamblers from around the world.</p>
+    <p>Start Wormate browser game online and make your pet the longest, strongest and fastest. It’s absolutely free and very funny.</p>
+</div>
+                            
+                            
+                            
+                            
+                        
+                    </div><div class="column-middle">
+
+                    <div id="mm-menu-cont" style="display: none">
+                        <img class="mm-logo" src="https://wormate.io/images/linelogo-valday2025.png" alt="Wormate.io logo">
+
+                        <div class="mm-event-cont"><span id="mm-event-text">Season of Love</span></div>
+
+                        <div class="mm-skin">
+                            <canvas id="mm-skin-canv" width="200" height="60" style="touch-action: none; cursor: inherit;"></canvas>
+                            <div id="mm-skin-prev"><svg><path d="M28.37 2L48 20.24 28 38V22.28" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;"></path><circle cx="14.73" cy="19.95" style="fill:none;stroke-width:2px;" r="4.8"></circle><circle cx="3.45" cy="20.42" r="2.4" style="fill:none;stroke-width:1px;"></circle></svg></div>
+                            <div id="mm-skin-next"><svg><path d="M28.37 2L48 20.24 28 38V22.28" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;"></path><circle cx="14.73" cy="19.95" style="fill:none;stroke-width:2px;" r="4.8"></circle><circle cx="3.45" cy="20.42" r="2.4" style="fill:none;stroke-width:1px;"></circle></svg></div>
+                            <div id="mm-skin-over" style="display: block;">
+                                <div id="mm-skin-over-label">Share with friends to unlock skins</div>
+                                <div id="mm-skin-over-button-list"><a class="mm-skin-over-button" id="mm-skin-over-fb" target="_blank" href="https://www.facebook.com/dialog/share?app_id=861926850619051&amp;display=popup&amp;href=https%3A%2F%2Fwormate.io&amp;redirect_uri=https%3A%2F%2Fwormate.io&amp;hashtag=%23wormateio&amp;quote=Come%20and%20play"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgdmlld0JveD0iMCAwIDQ1NiA0NTYiIHhtbDpzcGFjZT0icHJlc2VydmUiPjxwYXRoIGQ9Ik0yNDQuMyA0NTZWMjc5LjdoLTU5LjN2LTcxLjloNTkuM3YtNjAuNGMwLTQzLjkgMzUuNi03OS41IDc5LjUtNzkuNWg2MnY2NC42aC00NC40Yy0xMy45IDAtMjUuMyAxMS4zLTI1LjMgMjUuM3Y1MGg2OC41bC05LjUgNzEuOWgtNTkuMVY0NTZ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+"><span>Share</span></a></div>
+                            </div>
+                        </div>
+
+                        <div class="mm-params">
+                            <input id="mm-params-nickname" type="text" placeholder="your nickname">
+                            <select id="mm-params-game-mode">
+                                <option value="ARENA">Arena</option>
+                                <option value="TEAM2">2 Teams</option>
+                            </select>
+                        </div>
+
+                        <div class="mm-actions">
+                            <div id="mm-action-buttons">
+                                <div id="mm-action-play" style="display: none"><span>Play</span></div>
+                                <div id="mm-action-guest"><span>Play as guest</span></div>
+                                <div id="mm-action-login"><span>Login</span></div>
+                            </div>
+                        </div>
+
+                        <div id="mm-advice-cont">
+                            <div class="mm-advice" style="display: none;"><span>Catch up candies, cookies and cakes!</span></div>
+                            <div class="mm-advice" style="display: none;"><span>Move your mouse to control your worm</span></div>
+                            <div class="mm-advice" style="display: none;"><span>Press your mouse for acceleration</span></div>
+                            <div class="mm-advice" style="display: inline-block;"><span>Cut off others and eat their sweets to grow faster</span></div>
+                        </div>
+                    </div>
+                   
+
+                    </div><div class="column-right">
+
+                        <div id="loa831pibur0w4gv">
+                            <div class="label">Advertisement:</div>
+                            <div id="aqnvgcpz05orkobh" style="width:300px; height:250px;"><div id="WRM_wormate-io_300x250"></div></div>
+                        </div>
+ 
+                        
+                    </div>
+                </div>
+
+                <div id="mm-line-bottom">
+                    <div id="mm-bottom-buttons" style="display: none">
+                        <div id="mm-settings">Settings</div><div id="mm-leaders" style="display: none;">Leaders</div><div id="mm-store" style="display: none;">Store</div>
+                    </div>
+                    <div class="mm-merchant-cont"><a class="mm-merchant" href="https://itunes.apple.com/us/app/wormate.io/id1135523852?mt=8">
+                        <img src="/images/store-badge-apple.svg" alt="Get the iOS App!"></a><a class="mm-merchant" href="https://play.google.com/store/apps/details?id=io.wormate">
+                        <img src="https://wormate.io/images/store-badge-google.svg" alt="Get the Android App!"></a>
+                    </div>
+                </div>
+            </div>
+
+          
+          
+          
+
+            <div id="popup-view" class="stretch-view">
+                <div class="stretch-container">
+                    <div class="popup-view-head">
+                        <button id="popup-menu-back"></button>
+                        <span id="popup-menu-label">Leaders</span>
+                        <div id="popup-menu-coins-box">
+                            <img class="coin-img" src="https://wormate.io/images/coin.png" alt="Wormate coin">
+                            <span id="popup-menu-coins-val">0</span>
+                            <button class="popup-menu-coins-buy">+</button>
+                        </div>
+                    </div>
+
+                    <div class="popup-view-list">
+                        <div id="profile-view" class="base-popup-view">
+                            <div class="profile-user">
+                                <img id="profile-avatar" src="/images/guest-avatar-valday2025.png" alt="Wormate Guest Avatar">
+                                <div id="profile-username"></div>
+                                <div class="exp-cont">
+                                    <div id="profile-experience-bar"></div>
+                                    <div id="profile-experience-val"></div>
+                                </div>
+                                <div id="profile-level">1</div>
+                            </div>
+
+                            <div class="profile-stats">
+                                <div class="stat"><span class="label">High Score</span>         <span id="profile-stat-highScore" class="value">1435235</span></div>
+                                <div class="stat"><span class="label">Best Survival Time</span> <span id="profile-stat-bestSurvivalTime" class="value">1 min 37 sec</span></div>
+                                <div class="stat"><span class="label">Kills</span>              <span id="profile-stat-kills" class="value">423</span></div>
+                                <div class="stat"><span class="label">Headshots</span>          <span id="profile-stat-headshots" class="value">46</span></div>
+                                <div class="stat"><span class="label">Games Played</span>       <span id="profile-stat-gamesPlayed" class="value">34</span></div>
+                                <div class="stat"><span class="label">Total Play Time</span>   <span id="profile-stat-totalTimeSpent" class="value">4 hours 24 min</span></div>
+                                <div class="stat"><span class="label">Registration Date</span>  <span id="profile-stat-registrationDate" class="value">1 Oct 2016</span></div>
+                            </div>
+                        </div>
+
+                        <div id="leaders-view" class="base-popup-view">
+                            <div class="buttons">
+                                <div class="popup-button" id="leaders-button-level">Level</div>
+                                <div class="popup-button" id="leaders-button-highscore">High Score</div>
+                                <div class="popup-button" id="leaders-button-kills">Headshots / Kills</div>
+                            </div>
+
+                            <div class="table-header"><span>Place</span><span></span><span>Name</span><span>Level</span><span>High Score</span><span>Headshots / Kills</span>
+                            </div>
+
+                            <div id="highscore-table">
+                                <!--<div class="table-row"><span>1</span><span><img src="/images/guest-avatar.png"/></span><span>Jo adas</span><span>34</span><span>6645286</span><span>424 / 32</span></div>-->
+                            </div>
+                        </div>
+
+                        <div id="store-view" class="base-popup-view">
+                            <div id="store-go-wear-button">
+                                <img class="store-go-image" src="https://wormate.io/images/store-wear-button.jpg" alt="Wear store">
+                                <span class="store-go-text">Clothing</span>
+                            </div>
+
+                            <div id="store-go-skins-button">
+                                <img class="store-go-image" src="https://wormate.io/images/store-skins-button.jpg" alt="Skins store">
+                                <span class="store-go-text">Skins</span>
+                            </div>
+
+                            <div id="store-go-coins-button">
+                                <img class="store-go-image" src="https://wormate.io/images/store-coins-button.jpg" alt="Coins store">
+                                <span class="store-go-text">Coins</span>
+                            </div>
+                        </div>
+
+                        <div id="skins-view" class="base-popup-view">
+                            <div class="store-left">
+                                <div class="store-view-cont">
+                                    <div id="skin-group-description-cont"><span id="skin-group-description-text"></span></div>
+                                    <div id="skin-description-cont"><span id="skin-description-text"></span></div>
+
+                                    <canvas id="store-view-canv" width="300" height="100" style="touch-action: none; cursor: inherit;"></canvas>
+                                    <div id="store-view-prev"><svg><path d="M28.37 2L48 20.24 28 38V22.28" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;"></path><circle cx="14.73" cy="19.95" style="fill:none;stroke-width:2px;" r="4.8"></circle><circle cx="3.45" cy="20.42" r="2.4" style="fill:none;stroke-width:1px;"></circle></svg></div>
+                                    <div id="store-view-next"><svg><path d="M28.37 2L48 20.24 28 38V22.28" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;"></path><circle cx="14.73" cy="19.95" style="fill:none;stroke-width:2px;" r="4.8"></circle><circle cx="3.45" cy="20.42" r="2.4" style="fill:none;stroke-width:1px;"></circle></svg></div>
+                                </div>
+
+                                <div id="store-buy-button">
+                                    <span>Buy for</span>
+                                    <img class="coin-img" src="https://wormate.io/images/coin.png" alt="Wormate Coin">
+                                    <span id="store-item-price">5600123</span>
+                                </div>
+
+                                <div id="store-locked-bar"><span id="store-locked-bar-text"></span></div>
+                            </div>
+
+                            <div class="store-right">
+                                <ul id="store-groups"></ul>
+                            </div>
+                        </div>
+
+                        <div id="wear-view" class="base-popup-view">
+                            <ul class="wear-types">
+                                <li id="wear-eyes-button"></li>
+                                <li id="wear-mouths-button"></li>
+                                <li id="wear-glasses-button"></li>
+                                <li id="wear-hats-button"></li>
+                            </ul>
+
+                            <div class="wear-view-cont">
+                                <canvas id="wear-view-canv" width="350" height="180" style="touch-action: none; cursor: inherit;"></canvas>
+                                <div id="wear-view-prev"><svg><path d="M28.37 2L48 20.24 28 38V22.28" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;"></path><circle cx="14.73" cy="19.95" style="fill:none;stroke-width:2px;" r="4.8"></circle><circle cx="3.45" cy="20.42" r="2.4" style="fill:none;stroke-width:1px;"></circle></svg></div>
+                                <div id="wear-view-next"><svg><path d="M28.37 2L48 20.24 28 38V22.28" style="fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;"></path><circle cx="14.73" cy="19.95" style="fill:none;stroke-width:2px;" r="4.8"></circle><circle cx="3.45" cy="20.42" r="2.4" style="fill:none;stroke-width:1px;"></circle></svg></div>
+                            </div>
+
+                            <div id="wear-description-cont"><span id="wear-description-text"></span></div>
+
+                            <div id="wear-tint-chooser"></div>
+
+                            <div class="wear-state">
+                                <div id="wear-buy-button">
+                                    <span>Buy for</span>
+                                    <img class="coin-img" src="https://wormate.io/images/coin.png" alt="Wormate Coin">
+                                    <span id="wear-item-price">5600123</span>
+                                </div>
+
+                                <div id="wear-locked-bar"><span id="wear-locked-bar-text"></span></div>
+                            </div>
+                        </div>
+
+                        <div id="coins-view" class="base-popup-view">
+                            <div class="store-coins-free-column">
+                                <span class="store-coins-free-label">Free!</span>
+                            </div>
+
+                            <div class="store-coins-table">
+                                <div class="store-coins-row" id="store-buy-coins_125000">
+                                    <div>Best Deal</div><div>70 000</div><div>+</div><div>80%</div><div>=</div><div>125 000</div><img src="https://wormate.io/images/coin.png" alt="Wormate Coin"><div><span>$99.99</span></div><div>Buy</div>
+                                </div>
+                                <div class="store-coins-row" id="store-buy-coins_50000">
+                                    <div>Popular</div><div>30 000</div><div>+</div><div>65%</div><div>=</div><div>50 000</div><img src="https://wormate.io/images/coin.png" alt="Wormate Coin"><div><span>$49.99</span></div><div>Buy</div>
+                                </div>
+                                <div class="store-coins-row" id="store-buy-coins_16000">
+                                    <div></div><div>10 000</div><div>+</div><div>60%</div><div>=</div><div>16 000</div><img src="https://wormate.io/images/coin.png" alt="Wormate Coin"><div><span>$19.99</span></div><div>Buy</div>
+                                </div>
+                                <div class="store-coins-row" id="store-buy-coins_7000">
+                                    <div></div><div>5 000</div><div>+</div><div>40%</div><div>=</div><div>7 000</div><img src="https://wormate.io/images/coin.png" alt="Wormate Coin"><div><span>$9.99</span></div><div>Buy</div>
+                                </div>
+                                <div class="store-coins-row" id="store-buy-coins_3250">
+                                    <div></div><div>2 500</div><div>+</div><div>30%</div><div>=</div><div>3 250</div><img src="https://wormate.io/images/coin.png" alt="Wormate Coin"><div><span>$4.99</span></div><div>Buy</div>
+                                </div>
+                                <div class="store-coins-row" id="store-buy-coins_1250">
+                                    <div></div><div>1 000</div><div>+</div><div>25%</div><div>=</div><div>1 250</div><img src="https://wormate.io/images/coin.png" alt="Wormate Coin"><div><span>$1.99</span></div><div>Buy</div>
+                                </div>
+                            </div>
+
+                            <div class="store-coins-unavailable">
+                                <div class="sorry">Sorry, online payments are currently unavailable</div>
+                                <div class="use-mobile">
+                                    <span>Consider switching to our mobile app:</span>
+                                    <br><br>
+                                    <a class="merchant-button" href="https://itunes.apple.com/us/app/wormate.io/id1135523852?mt=8">
+                                        <img src="/images/store-badge-apple.svg" alt="Get the iOS App!">
+                                    </a>
+                                    <a class="merchant-button" href="https://play.google.com/store/apps/details?id=io.wormate">
+                                        <img src="https://wormate.io/images/store-badge-google.svg" alt="Get the Android App!">
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="settings-view" class="base-popup-view">
+                            <div class="settings-line">
+                                wormate.io 4.0.21 (1ba5f2f)
+                            </div>
+
+                            
+
+                            <div class="settings-line" id="settings-music-enabled-line">
+                                <span class="settings-label">Music enabled</span><input class="settings-switch" id="settings-music-enabled-switch" type="checkbox"><label for="settings-music-enabled-switch"></label>
+                            </div>
+
+                            <div class="settings-line" id="settings-sfx-enabled-line">
+                                <span class="settings-label">SFX enabled</span><input class="settings-switch" id="settings-sfx-enabled-switch" type="checkbox"><label for="settings-sfx-enabled-switch"></label>
+                            </div>
+
+                            <div class="popup-sep"></div>
+
+                            <div class="settings-line">
+                                <span class="settings-label">Show player names</span><input class="settings-switch" id="settings-show-names-switch" type="checkbox"><label for="settings-show-names-switch"></label>
+                            </div>
+
+                            <div class="popup-sep"></div>
+
+                            <div id="popup-logout-container" style="display: none;">
+                                <div class="settings-line" id="popup-logout">Logout</div>
+                            </div>
+
+                            <div id="popup-delete-account-container" style="display: none;">
+                                <div class="settings-line" id="popup-delete-account">Delete my account</div>
+                            </div>
+
+                            <div id="popup-withdraw-give-wrapper">
+                                <div class="settings-line" id="popup-withdraw-consent">Withdraw consent</div>
+                            </div>
+                        </div>
+
+                        <div id="login-view" class="base-popup-view">
+                            <div class="settings-line" id="popup-login-gg">Login via Google</div>
+                            <div class="settings-line" id="popup-login-fb">Login via Facebook</div>
+                        </div>
+
+                        <div id="withdraw-consent-view" class="base-popup-view">
+                            <span class="withdraw-consent-question">Withdraw consent?</span>
+
+                            <!--<div class="withdraw-consent-text" th:text="#{index.game.popup.menu.consent.withdraw.text}.replaceAll(' ', '1')">-->
+                            <div class="withdraw-consent-text">You&nbsp;have&nbsp;currently&nbsp;giving&nbsp;your&nbsp;consent&nbsp;to&nbsp;wormate.io's&nbsp;disclosure&nbsp;of&nbsp;the&nbsp;advertising&nbsp;identificator&nbsp;of&nbsp;your&nbsp;device&nbsp;to&nbsp;advertising&nbsp;network&nbsp;companies&nbsp;for&nbsp;the&nbsp;purpose&nbsp;of&nbsp;serving&nbsp;personalized&nbsp;advertisement&nbsp;experience&nbsp;in&nbsp;this&nbsp;game&nbsp;based&nbsp;on&nbsp;your&nbsp;personal&nbsp;preferences.<br><br>Are&nbsp;your&nbsp;sure&nbsp;you&nbsp;want&nbsp;to&nbsp;withdraw&nbsp;your&nbsp;consent?<br><br>(Please&nbsp;note&nbsp;that&nbsp;if&nbsp;you&nbsp;withdraw&nbsp;your&nbsp;consent,&nbsp;your&nbsp;user&nbsp;license&nbsp;to&nbsp;use&nbsp;this&nbsp;game&nbsp;will&nbsp;be&nbsp;terminated)</div>
+
+                            <div class="withdraw-consent-options">
+                                <div id="withdraw-consent-yes">Yes</div>
+                                <div id="withdraw-consent-no">No</div>
+                            </div>
+                        </div>
+
+                        <div id="delete-account-view" class="base-popup-view">
+                            <div class="delete-account-text">You&nbsp;are&nbsp;about&nbsp;to&nbsp;delete&nbsp;your&nbsp;wormate.io&nbsp;account.<br><br>Currently&nbsp;we&nbsp;are&nbsp;securely&nbsp;storing&nbsp;your&nbsp;data&nbsp;on&nbsp;our&nbsp;servers.&nbsp;Such&nbsp;data&nbsp;as:<br>-&nbsp;your&nbsp;username;<br>-&nbsp;game&nbsp;level&nbsp;and&nbsp;experience&nbsp;points;<br>-&nbsp;coins&nbsp;amount;<br>-&nbsp;bought&nbsp;and/or&nbsp;achieved&nbsp;skins&nbsp;and&nbsp;wear.<br><br>Warning!&nbsp;In&nbsp;case&nbsp;you&nbsp;request&nbsp;to&nbsp;delete&nbsp;your&nbsp;account,&nbsp;all&nbsp;your&nbsp;gaming&nbsp;data&nbsp;and&nbsp;properties&nbsp;will&nbsp;be&nbsp;completely&nbsp;erased&nbsp;from&nbsp;our&nbsp;servers!<br><br>After&nbsp;the&nbsp;deletion,&nbsp;you&nbsp;are&nbsp;free&nbsp;to&nbsp;create&nbsp;a&nbsp;new&nbsp;account&nbsp;again.&nbsp;Please&nbsp;note:&nbsp;your&nbsp;new&nbsp;account&nbsp;will&nbsp;not&nbsp;contain&nbsp;any&nbsp;of&nbsp;your&nbsp;previous&nbsp;achievements.</div>
+
+                            <span class="delete-account-question">Are&nbsp;you&nbsp;sure&nbsp;want&nbsp;to&nbsp;delete&nbsp;your&nbsp;account?<br>(WARNING:&nbsp;This&nbsp;action&nbsp;cannot&nbsp;be&nbsp;undone)</span>
+
+                            <div class="delete-account-options">
+                                <div id="delete-account-timer"></div>
+                                <div id="delete-account-yes">Delete my account</div>
+                                <div id="delete-account-no">Keep my account</div>
+                            </div>
+                        </div>
+
+                        <div id="please-wait-view" style="opacity: 1; display: none;"><span>Please wait...</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading-view" class="stretch-view">
+                <img class="loading-logo" src="https://wormate.io/images/linelogo-valday2025.png" alt="Wormate.io logo">
+                <div id="loading-progress-cont"><div id="loading-progress-bar" style="width: 48%;"></div><span id="loading-progress-text">48 %</span></div>
+                <span class="loading-label">loading...</span>
+            </div>
+
+            <div id="restricted-view" class="stretch-view">
+                <span class="restricted-title">Russia Invaded Ukraine</span>
+                <span class="restricted-description">On February 24, 2022, at 4:00 am, the troops of the Russian Federation treacherously invaded the territory of sovereign independent Ukraine.<br><br>We, Ukrainians, woke up from gunshots and explosions. Russia has declared war on us. The Russians are invading our country. They are already shelling our cities. They are already killing our citizens.<br><br>Russians, stop your schizophrenic. Take to the streets of cities for anti-war rallies. This war must stop immediately. Russian neo-Nazis are obliged to leave the territory of Ukraine. #RussiaInvadedUkraine #SaveUkraine #StopTheWar<br><br>Glory to Ukraine!</span>
+            </div>
+
+            <div id="toaster-view" class="stretch-view">
+                <div id="toaster-stack"></div>
+            </div>
+
+            <div id="error-gateway-connection-view" class="stretch-view">
+                <div id="error-gateway-connection-wrap">
+                    <div id="error-gateway-connection-caption">Warning</div>
+                    <div id="error-gateway-connection-message">
+                        <span id="error-gateway-connection-message-text">Wormate was unable to download application assets
+
+Please make sure the internet is on
+
+Try again a bit later if the problem remains</span>
+                    </div>
+                    <div id="error-gateway-connection-retry">Retry</div>
+                </div>
+            </div>
+
+            <div id="error-game-connection-view" class="stretch-view">
+                <div id="error-game-connection-wrap">
+                    <div id="error-game-connection-caption">Warning</div>
+                    <div id="error-game-connection-message">
+                        <span id="error-game-connection-message-text">Sorry, game session was interrupted for unknown reason
+Let's play again?</span>
+                    </div>
+                    <div id="error-game-connection-retry">Retry</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+/* ---- minimal QuadTree that satisfies Wormate ---- */
+class RectBounds {
+  constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; }
+  contains(item) {
+    return item.x >= this.x - item.radius &&
+           item.x <= this.x + this.w + item.radius &&
+           item.y >= this.y - item.radius &&
+           item.y <= this.y + this.h + item.radius;
+  }
+  intersects(range) {
+    return !(range.x - range.w > this.x + this.w ||
+             range.x + range.w < this.x - this.w ||
+             range.y - range.h > this.y + this.h ||
+             range.y + range.h < this.y - this.h);
+  }
+}
+
+class QuadTree {
+  constructor(boundary, capacity = 4, maxDepth = 10, depth = 0) {
+    this.boundary = boundary;
+    this.capacity = capacity;
+    this.maxDepth = maxDepth;
+    this.depth = depth;
+    this.items = [];
+    this.divided = false;
+  }
+  subdivide() {
+    const {x, y, w, h} = this.boundary;
+    const hw = w / 2, hh = h / 2;
+    this.northeast = new QuadTree(new RectBounds(x + hw, y, hw, hh), this.capacity, this.maxDepth, this.depth + 1);
+    this.northwest = new QuadTree(new RectBounds(x, y, hw, hh), this.capacity, this.maxDepth, this.depth + 1);
+    this.southeast = new QuadTree(new RectBounds(x + hw, y + hh, hw, hh), this.capacity, this.maxDepth, this.depth + 1);
+    this.southwest = new QuadTree(new RectBounds(x, y + hh, hw, hh), this.capacity, this.maxDepth, this.depth + 1);
+    this.divided = true;
+  }
+  insert(item) {
+    if (!this.boundary.contains(item)) return false;
+    if (this.items.length < this.capacity && !this.divided) {
+      this.items.push(item); return true;
+    }
+    if (!this.divided) this.subdivide();
+    return (this.northeast.insert(item) || this.northwest.insert(item) ||
+            this.southeast.insert(item) || this.southwest.insert(item));
+  }
+  query(range, found = []) {
+    if (!this.boundary.intersects(range)) return found;
+    for (const i of this.items) found.push(i);
+    if (this.divided) {
+      this.northwest.query(range, found);
+      this.northeast.query(range, found);
+      this.southwest.query(range, found);
+      this.southeast.query(range, found);
+    }
+    return found;
+  }
+  clear() {
+    this.items.length = 0;
+    if (this.divided) {
+      this.northeast.clear();
+      this.northwest.clear();
+      this.southeast.clear();
+      this.southwest.clear();
+    }
+    this.divided = false;
+  }
+}
+/* expose globally so minified code can see it */
+window.QuadTree = QuadTree;
+window.QuadTree = QuadTree; 
+QuadTree.RectBounds = RectBounds;  // twice just in case
+</script>
+
+  <script>
+    // Minimal stubs for ad scripts used by the original client.
+    // This keeps game.js running even when the ad provider isn't loaded.
+    (function () {
+      if (!window.aiptag) {
+        const runNowQueue = {
+          push(fn) {
+            try { if (typeof fn === 'function') fn(); } catch (e) {}
+          }
+        };
+        window.aiptag = {
+          cmd: {
+            player: runNowQueue,
+            display: runNowQueue
+          },
+          adplayer: undefined
+        };
+      }
+      if (!window.aipDisplayTag) {
+        window.aipDisplayTag = { display: function () {} };
+      }
+      if (!window.aipPlayer) {
+        window.aipPlayer = function () {};
+      }
+    })();
+  </script>
+
+  <!-- Game Scripts -->
+  <script src="js/game.js"></script>
+  
+  <script>
+    // Initialize WebSocket connection when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Override the default WebSocket behavior in client.js
+      if (window.WebSocketManager) {
+        console.log('Initializing WebSocket connection...');
+        window.WebSocketManager.init();
+        
+        // Make the WebSocket manager available globally for game.js
+        window.wsManager = window.WebSocketManager;
+      }
+    });
+  </script>
+  
+</body>
+</html>
